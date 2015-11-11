@@ -1,0 +1,33 @@
+machine:
+  services:
+    - docker
+  environment:
+    DB_SUPPORT: mariadb
+    MARIADB_USER: admin
+    MARIADB_PASS: password
+    JIRA_DB_ADDRESS: jira.db
+    JIRA_DB_NAME: jiradb
+    JIRA_USER: jira-user
+    JIRA_PASS: password
+
+dependencies:
+  pre:
+    - docker pull million12/mariadb
+    - docker pull busybox:latest
+  post:
+    - docker build -t million12/jira-service-desk .
+
+test:
+  override:
+    - docker run -d --name jira-service-desk-db -e MARIADB_USER=$MARIADB_USER -e MARIADB_PASS=$MARIADB_PASS million12/mariadb
+    - docker logs -f jira-service-desk-db | tee -a ${CIRCLE_ARTIFACTS}/jira-service-desk-db.log:
+        background: true
+    - while true; do if grep "You can now connect to this MariaDB Server" -a ${CIRCLE_ARTIFACTS}/jira-service-desk-db.log; then break; else sleep 1; fi done
+    # After MariaDB starts run jira
+    - docker run -d --name jira-service-desk --link jira-service-desk-db:jira.db -e DB_SUPPORT=$DB_SUPPORT -e MARIADB_USER=$MARIADB_USER -e MARIADB_PASS=$MARIADB_PASS -e JIRA_DB_ADDRESS=$JIRA_DB_ADDRESS -e JIRA_DB_NAME=$JIRA_DB_NAME -e JIRA_USER=$JIRA_USER -e JIRA_PASS=$JIRA_PASS -p 80:8080 million12/jira-service-desk
+    - docker logs -f jira-service-desk | tee -a ${CIRCLE_ARTIFACTS}/jira-service-desk.log:
+        background: true
+    - while true; do if grep "All cleaned. System ready!" -a ${CIRCLE_ARTIFACTS}/jira-service-desk.log; then break; else sleep 1; fi done
+    - sleep 30
+    # Check if web-interface accessible
+    - curl -s -L --head http://127.0.0.1/ | grep "HTTP/1.1 200 OK"

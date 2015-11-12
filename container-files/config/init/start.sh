@@ -13,6 +13,7 @@ separator=$(echo && printf '=%.0s' {1..100} && echo)
 
 #OS VARIABLES
 INSTALL_DIR='/opt/atlassian/jira'
+INSTALL_FILE='/tmp/jira.bin'
 
 # Functions
 log() {
@@ -25,13 +26,28 @@ stop_jira() {
   log "Jira Stopped"
 }
 install_jira() {
-  cd /tmp
-  ./jira.bin <<<"o
+  if [[ -e ${INSTALL_FILE} ]]; then
+    log "Starting Installation of Jira Service Desk version: ${JIRA_VERSION}"
+    cd /tmp
+    ./jira.bin <<<"o
 1
 i
 "
-  log "JIRA server installed."
-  stop_jira
+    ## Check Supported version of database specified by user on docker run.
+    if [[ ${DB_SUPPORT} == "mysql" || ${DB_SUPPORT} == "mariadb" ]]; then
+      prepare_mysql_database
+      get_mysql_connector
+      log "MySQL/MariaDB Support ${bold}${green}[Installed]${reset}"
+    else
+      log "MySQL/MariaDB Support ${bold}${red}[Not Installed]${reset}"
+    fi
+    log "JIRA Service Desk installed."
+    stop_jira
+    ## Clean all installation directories from trash.
+    clean_all
+  else
+    log "Jira Service Desk already installed and configured. Attempting to start previous Jira instance."
+  fi
 }
 get_mysql_connector() {
   log "Downloading mysql-connector."
@@ -42,7 +58,7 @@ get_mysql_connector() {
   log "mysql-connector Installed."
 }
 prepare_mysql_database() {
-  log "Creating and configuring MYSQL database"
+  log "Installing MySQL/MariaDB support"
   MYSQL_CONN="mysql -u $MARIADB_USER -p$MARIADB_PASS -h $JIRA_DB_ADDRESS -e "
   ${MYSQL_CONN} "CREATE DATABASE $JIRA_DB_NAME CHARACTER SET utf8 COLLATE utf8_bin;"
   ${MYSQL_CONN} "GRANT ALL on ${JIRA_DB_NAME}.* TO '${JIRA_USER}'@'%' IDENTIFIED BY '${JIRA_PASS}';"
@@ -56,13 +72,6 @@ clean_all() {
   rm -rf /tmp/jira.bin
   log "All cleaned. System ready! "
 }
-### Magic Starts here
+
 ## Install Jira Server
 install_jira
-## Check Supported version of database specified by user on docker run.
-if [[ ${DB_SUPPORT} == "mysql" || ${DB_SUPPORT} == "mariadb" ]]; then
-  prepare_mysql_database
-  get_mysql_connector
-fi
-## Clean all installation directories from trash.
-clean_all

@@ -36,7 +36,7 @@ i
     ## Check Supported version of database specified by user on docker run.
     if [[ ${DB_SUPPORT} == "mysql" || ${DB_SUPPORT} == "mariadb" ]]; then
       prepare_mysql_database
-      get_mysql_connector
+      install_mysql_connector
       log "MySQL/MariaDB Support ${bold}${green}[Installed]${reset}"
     else
       log "MySQL/MariaDB Support ${bold}${red}[Not Installed]${reset}"
@@ -49,9 +49,8 @@ i
     log "Jira Service Desk already installed and configured. Attempting to start previous Jira instance."
   fi
 }
-get_mysql_connector() {
-  log "Downloading mysql-connector."
-  curl -L http://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-5.1.37.tar.gz -o /tmp/mysql-connector-java-5.1.37.tar.gz
+install_mysql_connector() {
+  log "Installing mysql-connector."
   mkdir -p /tmp/mysql-connector/
   tar zxvf /tmp/mysql-connector-java-5.1.37.tar.gz -C /tmp/mysql-connector/ --strip-components=1
   cp /tmp/mysql-connector/mysql-connector-java-5.1.37-bin.jar ${INSTALL_DIR}/lib/

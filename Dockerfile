@@ -2,8 +2,8 @@ FROM million12/centos-supervisor
 MAINTAINER Przemyslaw Ozgo linux@ozgo.info
 
 # Supported DB: HSQL(default) and MySQL(MariaDB). to select MySQL use DB_SUPPORT=mysql or DB_SUPPORT=mariadb on docekr run.
-ENV JIRASD_VERSION=3.0.0 \
-    JIRA_VERSION=7.0.0 \
+ENV JIRASD_VERSION=3.1.0 \
+    JIRA_VERSION=7.1.0 \
     DB_SUPPORT=default
 
 RUN \
